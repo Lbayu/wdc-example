@@ -1,17 +1,74 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Web Data Connector (WDC) Example</title>
-    <script src="https://cdn.jsdelivr.net/npm/tableau-api@2.8.0/dist/tableau.js"></script>
-  </head>
-  <body>
-    <h1>WDC Google Sheets Connector</h1>
-    <label for="url">Enter Google Sheets URL (CSV/JSON):</label>
-    <input type="text" id="url" placeholder="Enter URL">
-    <button id="fetchButton">Fetch Data</button>
-    <br>
-    <pre id="status"></pre>
+<head>
+  <title>WDC Example</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://connectors.tableau.com/libs/tableauwdc-2.3.latest.js"></script>
+</head>
+<body>
+  <h1>WDC Google Sheets Connector</h1>
+  <p>Enter Google Sheets URL (CSV/JSON): <input type="text" id="sheetUrl" size="50">
+  <button id="fetchButton">Fetch Data</button></p>
 
-    <script src="connector.js"></script>
-  </body>
+  <script type="text/javascript">
+    (function() {
+      var myConnector = tableau.makeConnector();
+
+      // Define schema
+      myConnector.getSchema = function(schemaCallback) {
+        var cols = [
+          { id: "column1", dataType: tableau.dataTypeEnum.string },
+          { id: "column2", dataType: tableau.dataTypeEnum.string }
+        ];
+
+        var tableSchema = {
+          id: "googleSheetData",
+          alias: "Google Sheet Data",
+          columns: cols
+        };
+
+        schemaCallback([tableSchema]);
+      };
+
+      // Download data
+      myConnector.getData = function(table, doneCallback) {
+        var sheetUrl = tableau.connectionData; // URL dari submit()
+        $.get(sheetUrl, function(resp) {
+          var tableData = [];
+
+          // Contoh parse CSV baris per baris
+          var lines = resp.split("\n");
+          for (var i = 1; i < lines.length; i++) {
+            var fields = lines[i].split(",");
+            if(fields.length >= 2){
+              tableData.push({
+                "column1": fields[0],
+                "column2": fields[1]
+              });
+            }
+          }
+
+          table.appendRows(tableData);
+          doneCallback();
+        });
+      };
+
+      tableau.registerConnector(myConnector);
+
+      // Button click
+      $(document).ready(function() {
+        $("#fetchButton").click(function() {
+          var url = $("#sheetUrl").val().trim();
+          if (url) {
+            tableau.connectionData = url;  // Save URL to use in getData
+            tableau.connectionName = "Google Sheets WDC"; // Nama di Tableau
+            tableau.submit();
+          } else {
+            alert("Please enter a URL.");
+          }
+        });
+      });
+    })();
+  </script>
+</body>
 </html>
