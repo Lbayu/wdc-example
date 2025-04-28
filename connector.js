@@ -1,7 +1,7 @@
 (function() {
   var myConnector = tableau.makeConnector();
 
-  var sheetUrl = "";
+  var sheetUrl = "https://lbayu.github.io/csv-hosting/Prediksi Kontrak XYZ - Sheet1 (1).csv";  // Di sini sheetUrl akan diubah berdasarkan input dari pengguna
 
   // Buat Form Interaktif
   myConnector.getSchema = function(schemaCallback) {
@@ -77,6 +77,13 @@
       if (sheetUrl.includes("/edit")) {
         sheetUrl = sheetUrl.replace("/edit", "/export?format=csv");
       }
+
+      // Pastikan sheetUrl mengarah ke file CSV yang di-hosting GitHub Pages
+      if (sheetUrl.includes("/edit")) {
+        // Misalnya: https://username.github.io/csv-hosting/data.csv
+        sheetUrl = sheetUrl.replace("/edit", "/export?format=csv");
+      }
+
       tableau.connectionName = "Google Sheets WDC Dynamic";
       tableau.submit();
     });
