@@ -22,7 +22,8 @@
         const headers = rows[0].map(h => h.trim().replace(/^"|"$/g, ""));
 
         const cols = headers.map(header => ({
-          id: header.replace(/\s+/g, "_"),
+          id: header.replace(/\s+/g, "_")       // Mengganti spasi dengan garis bawah
+                     .replace(/[^a-zA-Z0-9_]/g, ""),  // Menghapus karakter selain huruf, angka, dan garis bawah
           alias: header,
           dataType: tableau.dataTypeEnum.string
         }));
@@ -53,7 +54,7 @@
         for (let i = 1; i < rows.length; i++) {
           const row = {};
           for (let j = 0; j < headers.length; j++) {
-            row[headers[j].replace(/\s+/g, "_")] = rows[i][j] ? rows[i][j].trim().replace(/^"|"$/g, "") : null;
+            row[headers[j].replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, "")] = rows[i][j] ? rows[i][j].trim().replace(/^"|"$/g, "") : null;
           }
           data.push(row);
         }
@@ -75,12 +76,6 @@
 
       // Otomatis ubah link edit ke export CSV
       if (sheetUrl.includes("/edit")) {
-        sheetUrl = sheetUrl.replace("/edit", "/export?format=csv");
-      }
-
-      // Pastikan sheetUrl mengarah ke file CSV yang di-hosting GitHub Pages
-      if (sheetUrl.includes("/edit")) {
-        // Misalnya: https://username.github.io/csv-hosting/data.csv
         sheetUrl = sheetUrl.replace("/edit", "/export?format=csv");
       }
 
