@@ -1,6 +1,6 @@
 (function() {
   var myConnector = tableau.makeConnector();
-  var sheetUrl = "https://lbayu.github.io/csv-hosting/Prediksi Kontrak XYZ - Sheet1 (1).csv";
+  var sheetUrl = "https://lbayu.github.io/csv-hosting/prediksi_kontrak_xyz.csv";
 
   myConnector.getSchema = function(schemaCallback) {
     fetch(sheetUrl)
