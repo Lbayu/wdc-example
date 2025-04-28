@@ -4,84 +4,11 @@
   <title>WDC Google Sheets Connector - Dynamic</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
   <script src="https://connectors.tableau.com/libs/tableauwdc-2.3.latest.js"></script>
+  <script src="connector.js"></script> <!-- Tambahkan ini untuk load WDC logic -->
 </head>
 <body>
   <h1>Google Sheets WDC - Dynamic Columns</h1>
   <p>Enter Google Sheets URL (CSV format): <input type="text" id="sheetUrl" size="70">
   <button id="fetchButton">Connect to Tableau</button></p>
-
-  <script type="text/javascript">
-    (function() {
-      var myConnector = tableau.makeConnector();
-
-      var sheetUrl = "";
-
-      myConnector.getSchema = function(schemaCallback) {
-        fetch(sheetUrl)
-          .then(response => response.text())
-          .then(text => {
-            const rows = text.split("\n").map(row => row.split(","));
-            const headers = rows[0];
-
-            const cols = headers.map(header => ({
-              id: header.trim().replace(/\s+/g, "_"), // ganti spasi jadi underscore
-              alias: header.trim(),
-              dataType: tableau.dataTypeEnum.string
-            }));
-
-            const tableSchema = {
-              id: "googleSheetData",
-              alias: "Google Sheet Data",
-              columns: cols
-            };
-
-            schemaCallback([tableSchema]);
-          })
-          .catch(error => console.error('Schema Fetch Error:', error));
-      };
-
-      myConnector.getData = function(table, doneCallback) {
-        fetch(sheetUrl)
-          .then(response => response.text())
-          .then(text => {
-            const rows = text.split("\n").map(row => row.split(","));
-            const headers = rows[0].map(h => h.trim());
-
-            const tableData = [];
-
-            for (let i = 1; i < rows.length; i++) {
-              const row = rows[i];
-              if (row.length > 1) {
-                const rowData = {};
-                headers.forEach((header, index) => {
-                  rowData[header.replace(/\s+/g, "_")] = row[index] || "";
-                });
-                tableData.push(rowData);
-              }
-            }
-
-            table.appendRows(tableData);
-            doneCallback();
-          })
-          .catch(error => console.error('Data Fetch Error:', error));
-      };
-
-      tableau.registerConnector(myConnector);
-
-      $(document).ready(function() {
-        $("#fetchButton").click(function() {
-          var urlInput = $("#sheetUrl").val().trim();
-          if (urlInput) {
-            sheetUrl = urlInput;
-            tableau.connectionName = "Google Sheets Dynamic WDC"; 
-            tableau.submit();
-          } else {
-            alert("Please enter a Google Sheets CSV URL.");
-          }
-        });
-      });
-
-    })();
-  </script>
 </body>
 </html>
