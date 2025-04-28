@@ -1,74 +1,108 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>WDC Example</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Google Sheets WDC</title>
   <script src="https://connectors.tableau.com/libs/tableauwdc-2.3.latest.js"></script>
 </head>
 <body>
-  <h1>WDC Google Sheets Connector</h1>
-  <p>Enter Google Sheets URL (CSV/JSON): <input type="text" id="sheetUrl" size="50">
-  <button id="fetchButton">Fetch Data</button></p>
+  <h1>Google Sheets Web Data Connector</h1>
 
-  <script type="text/javascript">
+  <label for="sheetUrl">Masukkan URL CSV Google Sheet kamu:</label><br>
+  <input type="text" id="sheetUrl" size="80" placeholder="https://docs.google.com/spreadsheets/.../export?format=csv"><br><br>
+
+  <button onclick="submitWDC()">Connect to Tableau</button>
+
+  <script>
     (function() {
       var myConnector = tableau.makeConnector();
 
-      // Define schema
       myConnector.getSchema = function(schemaCallback) {
-        var cols = [
-          { id: "column1", dataType: tableau.dataTypeEnum.string },
-          { id: "column2", dataType: tableau.dataTypeEnum.string }
-        ];
+        const url = document.getElementById("sheetUrl").value;
 
-        var tableSchema = {
-          id: "googleSheetData",
-          alias: "Google Sheet Data",
-          columns: cols
-        };
+        fetch(url)
+          .then(response => response.text())
+          .then(text => {
+            const delimiter = detectDelimiter(text);
+            const rows = text.split("\n").map(row => row.split(delimiter));
+            const headers = rows[0].map(h => h.trim().replace(/^"|"$/g, ""));
 
-        schemaCallback([tableSchema]);
+            const cols = headers.map(header => ({
+              id: header,
+              alias: header,
+              dataType: tableau.dataTypeEnum.string
+            }));
+
+            const tableSchema = {
+              id: "GoogleSheetData",
+              alias: "Google Sheet Data",
+              columns: cols
+            };
+
+            schemaCallback([tableSchema]);
+          })
+          .catch(error => {
+            console.error("Error saat mengambil schema:", error);
+            tableau.abortWithError("Gagal mengambil schema. Pastikan URL benar dan file tidak kosong.");
+          });
       };
 
-      // Download data
       myConnector.getData = function(table, doneCallback) {
-        var sheetUrl = tableau.connectionData; // URL dari submit()
-        $.get(sheetUrl, function(resp) {
-          var tableData = [];
+        const url = document.getElementById("sheetUrl").value;
 
-          // Contoh parse CSV baris per baris
-          var lines = resp.split("\n");
-          for (var i = 1; i < lines.length; i++) {
-            var fields = lines[i].split(",");
-            if(fields.length >= 2){
-              tableData.push({
-                "column1": fields[0],
-                "column2": fields[1]
+        fetch(url)
+          .then(response => response.text())
+          .then(text => {
+            const delimiter = detectDelimiter(text);
+            const rows = text.split("\n").map(row => row.split(delimiter));
+            const headers = rows[0].map(h => h.trim().replace(/^"|"$/g, ""));
+
+            const data = [];
+
+            for (let i = 1; i < rows.length; i++) {
+              const row = rows[i];
+              if (row.length !== headers.length) {
+                continue;
+              }
+              const rowData = {};
+              headers.forEach((header, index) => {
+                rowData[header] = row[index] ? row[index].trim().replace(/^"|"$/g, "") : null;
               });
+              data.push(rowData);
             }
-          }
 
-          table.appendRows(tableData);
-          doneCallback();
-        });
+            table.appendRows(data);
+            doneCallback();
+          })
+          .catch(error => {
+            console.error("Error saat mengambil data:", error);
+            tableau.abortWithError("Gagal mengambil data.");
+          });
       };
+
+      function detectDelimiter(sampleText) {
+        const delimiters = [",", ";", "\t"];
+        let maxCount = 0;
+        let selected = ",";
+        
+        delimiters.forEach(d => {
+          const count = (sampleText.split("\n")[0].match(new RegExp(`\\${d}`, 'g')) || []).length;
+          if (count > maxCount) {
+            maxCount = count;
+            selected = d;
+          }
+        });
+        return selected;
+      }
 
       tableau.registerConnector(myConnector);
-
-      // Button click
-      $(document).ready(function() {
-        $("#fetchButton").click(function() {
-          var url = $("#sheetUrl").val().trim();
-          if (url) {
-            tableau.connectionData = url;  // Save URL to use in getData
-            tableau.connectionName = "Google Sheets WDC"; // Nama di Tableau
-            tableau.submit();
-          } else {
-            alert("Please enter a URL.");
-          }
-        });
-      });
     })();
+
+    function submitWDC() {
+      tableau.connectionName = "Google Sheets WDC";
+      tableau.submit();
+    }
   </script>
+
 </body>
 </html>
