@@ -1,105 +1,49 @@
 (function() {
   var myConnector = tableau.makeConnector();
-  var sheetUrl = "https://docs.google.com/spreadsheets/d/14aD7rTWvzi8zkKrB7msxyL749AebLo-F7bAnsup8qOs/edit";
 
   myConnector.getSchema = function(schemaCallback) {
-    fetch(sheetUrl)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("HTTP error " + response.status);
-        }
-        return response.text();
-      })
-      .then(text => {
-        if (!text || text.startsWith("<!DOCTYPE html>") || text.includes("<html")) {
-          throw new Error("Bukan file CSV yang valid.");
-        }
+    var cols = [
+      { id: "name", dataType: tableau.dataTypeEnum.string },
+      { id: "age", dataType: tableau.dataTypeEnum.int },
+      { id: "city", dataType: tableau.dataTypeEnum.string }
+    ];
 
-        const delimiter = detectDelimiter(text);
-        const rows = text.trim().split("\n").map(row => row.split(delimiter));
-        const headers = rows[0].map(h => cleanHeader(h));
+    var tableSchema = {
+      id: "dataTable",
+      alias: "Sample data from Google Sheets",
+      columns: cols
+    };
 
-        const cols = headers.map(header => ({
-          id: header,
-          alias: header.replace(/_/g, " "),
-          dataType: tableau.dataTypeEnum.string
-        }));
-
-        const tableSchema = {
-          id: "googleSheetData",
-          alias: "Google Sheet Data",
-          columns: cols
-        };
-
-        schemaCallback([tableSchema]);
-      })
-      .catch(error => {
-        console.error("Error saat mengambil schema:", error);
-        tableau.abortWithError("Gagal mengambil schema. Cek kembali URL dan akses file.");
-      });
+    schemaCallback([tableSchema]);
   };
 
   myConnector.getData = function(table, doneCallback) {
-    fetch(sheetUrl)
-      .then(response => response.text())
-      .then(text => {
-        const delimiter = detectDelimiter(text);
-        const rows = text.trim().split("\n").map(row => row.split(delimiter));
-        const headers = rows[0].map(h => cleanHeader(h));
-        const data = [];
+    var url = document.getElementById("https://docs.google.com/spreadsheets/d/e/2PACX-1vRf7iQivW3eFpE1V083ddaaMSYN3TfSv2CwX6hQokHWEtsyIgZrRejc1YQvl_gUjaZssXhOkGDO4AlM/pub?output=csv").value;
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        var tableData = [];
+        data.forEach(item => {
+          tableData.push({
+            "name": item.name,
+            "age": item.age,
+            "city": item.city
+          });
+        });
 
-        for (let i = 1; i < rows.length; i++) {
-          const row = {};
-          for (let j = 0; j < headers.length; j++) {
-            row[headers[j]] = rows[i][j] ? rows[i][j].trim().replace(/^"|"$/g, "") : null;
-          }
-          data.push(row);
-        }
-
-        table.appendRows(data);
+        table.appendRows(tableData);
         doneCallback();
       })
       .catch(error => {
-        console.error("Error saat mengambil data:", error);
-        tableau.abortWithError("Gagal mengambil data. Cek kembali URL dan akses file.");
+        document.getElementById("status").innerText = "Error fetching data: " + error;
+        doneCallback();
       });
   };
 
   tableau.registerConnector(myConnector);
 
-  $(document).ready(function() {
-    $("#fetchButton").click(function() {
-      let inputUrl = $("#sheetUrl").val().trim();
-
-      // --- ✨ Magic Link Sanitizer ✨ ---
-      if (inputUrl.includes("/edit")) {
-        inputUrl = inputUrl.split("/edit")[0] + "/edit"; // buang parameter setelah /edit
-        inputUrl = inputUrl.replace("/edit", "/export?format=csv");
-      } else if (inputUrl.includes("/export")) {
-        // biarkan kalau sudah export
-      } else {
-        alert("Format link kurang tepat, pastikan share link Google Sheets!");
-        return;
-      }
-      sheetUrl = inputUrl;
-      tableau.connectionName = "Google Sheets WDC Dynamic";
-      tableau.submit();
-    });
+  document.getElementById("fetchButton").addEventListener("click", function() {
+    tableau.connectionName = "Google Sheets Data";
+    tableau.submit();
   });
-
-  function detectDelimiter(csvText) {
-    if (csvText.includes(",")) return ",";
-    if (csvText.includes(";")) return ";";
-    if (csvText.includes("\t")) return "\t";
-    return ",";
-  }
-
-  function cleanHeader(header) {
-    return header.trim()
-      .replace(/^"|"$/g, "") // Remove quotes
-      .replace(/[^\w]/g, "_") // Non-word chars jadi underscore
-      .replace(/_+/g, "_")    // Multiple underscores jadi satu
-      .replace(/^_|_$/g, "")  // Remove leading/trailing underscore
-      .toLowerCase();         // Lowercase semua
-  }
 })();

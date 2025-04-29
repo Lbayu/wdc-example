@@ -1,18 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Google Sheets WDC - Dynamic</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-  <script src="https://connectors.tableau.com/libs/tableauwdc-2.3.latest.js"></script>
-  <script src="connector.js"></script>
-</head>
-<body>
-  <h1>Google Sheets WDC - Dynamic Columns</h1>
-  <p>
-    Enter Google Sheets URL (link share yang format edit):
-    <input type="text" id="sheetUrl" size="70">
-    <button id="fetchButton">Connect to Tableau</button>
-  </p>
-</body>
-</html>
+ <html>
+   <head>
+     <title>Web Data Connector (WDC) Example</title>
+     <script src="https://cdn.jsdelivr.net/npm/tableau-api@2.8.0/dist/tableau.js"></script>
+   </head>
+   <body>
+     <h1>WDC Google Sheets Connector</h1>
+     <label for="url">Enter Google Sheets URL (CSV/JSON):</label>
+     <input type="text" id="url" placeholder="Enter URL">
+     <button id="fetchButton">Fetch Data</button>
+     <br>
+     <pre id="status"></pre>
+ 
+     <script src="connector.js"></script>
+   </body>
+ </html>
