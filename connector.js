@@ -1,6 +1,6 @@
 (function() {
   var myConnector = tableau.makeConnector();
-  var sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRf7iQivW3eFpE1V083ddaaMSYN3TfSv2CwX6hQokHWEtsyIgZrRejc1YQvl_gUjaZssXhOkGDO4AlM/pub?output=csv";
+  var sheetUrl = "https://docs.google.com/spreadsheets/d/14aD7rTWvzi8zkKrB7msxyL749AebLo-F7bAnsup8qOs/edit";
 
   myConnector.getSchema = function(schemaCallback) {
     fetch(sheetUrl)
@@ -69,11 +69,19 @@
 
   $(document).ready(function() {
     $("#fetchButton").click(function() {
-      sheetUrl = $("#sheetUrl").val().trim();
+      let inputUrl = $("#sheetUrl").val().trim();
 
-      if (sheetUrl.includes("/edit")) {
-        sheetUrl = sheetUrl.replace("/edit", "/export?format=csv");
+      // --- ✨ Magic Link Sanitizer ✨ ---
+      if (inputUrl.includes("/edit")) {
+        inputUrl = inputUrl.split("/edit")[0] + "/edit"; // buang parameter setelah /edit
+        inputUrl = inputUrl.replace("/edit", "/export?format=csv");
+      } else if (inputUrl.includes("/export")) {
+        // biarkan kalau sudah export
+      } else {
+        alert("Format link kurang tepat, pastikan share link Google Sheets!");
+        return;
       }
+      sheetUrl = inputUrl;
       tableau.connectionName = "Google Sheets WDC Dynamic";
       tableau.submit();
     });
@@ -92,6 +100,6 @@
       .replace(/[^\w]/g, "_") // Non-word chars jadi underscore
       .replace(/_+/g, "_")    // Multiple underscores jadi satu
       .replace(/^_|_$/g, "")  // Remove leading/trailing underscore
-      .toLowerCase();         // Optional: lowercase semua
+      .toLowerCase();         // Lowercase semua
   }
 })();
