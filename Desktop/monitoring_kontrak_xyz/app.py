@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 from datetime import datetime
+import matplotlib.pyplot as plt  # ⬅️ Tambahan untuk pie chart
 
 # Judul
 st.title("📊 Prediksi Risiko & Prioritas Kontrak XYZ")
@@ -60,16 +61,31 @@ if uploaded_file is not None:
 
     df['Predicted_Duration_Status'] = df['Predicted_Duration'].apply(status_durasi)
 
-    # Tampilkan hasil
+    # ✅ Tampilkan hasil
     st.success("✅ Data berhasil diproses!")
     st.dataframe(df[['Nama Vendor', 'Nilai Kontrak', 'Durasi Kontrak (hari)', 
                      'Delay Perpanjangan (hari)', 'Risk Level', 'Prioritas', 
                      'Predicted_Duration_Status']])
 
-    # Unduh hasil
+    # 📊 Visualisasi Data
+    st.subheader("📊 Jumlah Kontrak per Risk Level")
+    st.bar_chart(df['Risk Level'].value_counts())
+
+    if 'Prioritas' in df.columns:
+        st.subheader("🧁 Distribusi Prioritas Kontrak")
+        priority_counts = df['Prioritas'].value_counts()
+        fig, ax = plt.subplots()
+        ax.pie(priority_counts, labels=priority_counts.index, autopct='%1.1f%%', startangle=90)
+        ax.axis('equal')
+        st.pyplot(fig)
+
+    st.subheader("📈 Prediksi Sisa Hari Kontrak per Vendor")
+    line_data = df[['Nama Vendor', 'Predicted_Duration']].set_index('Nama Vendor')
+    st.line_chart(line_data)
+
+    # 📥 Unduh hasil
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button("📥 Unduh hasil sebagai CSV", data=csv, file_name="hasil_prediksi.csv", mime='text/csv')
 
 else:
     st.info("📂 Silakan upload file CSV terlebih dahulu untuk mulai analisis.")
-
