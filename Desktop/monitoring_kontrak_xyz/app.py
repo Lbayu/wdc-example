@@ -3,7 +3,7 @@ import pandas as pd
 import joblib
 from datetime import datetime
 import matplotlib.pyplot as plt
-import plotly.express as px  # ⬅️ Tambahan untuk bar chart interaktif
+import plotly.express as px  # ✅ Tambahan interaktif
 
 # Judul
 st.title("📊 Prediksi Risiko & Prioritas Kontrak XYZ")
@@ -41,7 +41,6 @@ if uploaded_file is not None:
         features = ['Nilai Kontrak', 'Durasi Kontrak (hari)', 'Delay Perpanjangan (hari)']
         df['Prioritas_encoded'] = model.predict(df[features])
 
-        # Load LabelEncoder Prioritas
         le_priority = joblib.load("le_priority.pkl")
         df['Prioritas'] = le_priority.inverse_transform(df['Prioritas_encoded'])
 
@@ -68,41 +67,30 @@ if uploaded_file is not None:
                      'Delay Perpanjangan (hari)', 'Risk Level', 'Prioritas', 
                      'Predicted_Duration_Status']])
 
-    # 📊 Visualisasi Data
-    st.subheader("📊 Jumlah Kontrak per Risk Level")
-    st.bar_chart(df['Risk Level'].value_counts())
+    # 📊 Visualisasi Risk Level Interaktif
+    st.subheader("📊 Visualisasi Durasi Kontrak per Vendor berdasarkan Risk Level")
+    fig = px.bar(
+        df,
+        x="Durasi Kontrak (hari)",
+        y="Nama Vendor",
+        color="Risk Level",
+        orientation="h",
+        hover_data=["Jenis Pengadaan", "Nama Vendor", "Risk Level", "Durasi Kontrak (hari)"],
+        color_discrete_map={"Tinggi": "red", "Sedang": "orange", "Rendah": "blue"},
+        title="📌 Visualisasi Durasi Kontrak per Vendor berdasarkan Risk Level"
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
+    # 🧁 Distribusi Prioritas Kontrak
     if 'Prioritas' in df.columns:
         st.subheader("🧁 Distribusi Prioritas Kontrak")
         priority_counts = df['Prioritas'].value_counts()
-        fig, ax = plt.subplots()
-        ax.pie(priority_counts, labels=priority_counts.index, autopct='%1.1f%%', startangle=90)
-        ax.axis('equal')
-        st.pyplot(fig)
+        fig2, ax2 = plt.subplots()
+        ax2.pie(priority_counts, labels=priority_counts.index, autopct='%1.1f%%', startangle=90)
+        ax2.axis('equal')
+        st.pyplot(fig2)
 
-    # ✅ Tambahan: Bar Chart Horizontal ala Tableau
-    st.subheader("📌 Visualisasi Durasi Kontrak per Vendor berdasarkan Risk Level")
-    fig_bar = px.bar(
-        df.sort_values('Durasi Kontrak (hari)', ascending=False),
-        x='Durasi Kontrak (hari)',
-        y='Nama Vendor',
-        color='Risk Level',
-        orientation='h',
-        height=800,
-        labels={
-            'Durasi Kontrak (hari)': 'Durasi Kontrak (hari)',
-            'Nama Vendor': 'Nama Vendor',
-            'Risk Level': 'Tingkat Risiko'
-        },
-        color_discrete_map={
-            'Rendah': '#1f77b4',
-            'Sedang': '#ff7f0e',
-            'Tinggi': '#d62728'
-        }
-    )
-    st.plotly_chart(fig_bar, use_container_width=True)
-
-    # 📈 Line Chart Prediksi Sisa Hari
+    # 📈 Prediksi Sisa Hari Kontrak
     st.subheader("📈 Prediksi Sisa Hari Kontrak per Vendor")
     line_data = df[['Nama Vendor', 'Predicted_Duration']].set_index('Nama Vendor')
     st.line_chart(line_data)
