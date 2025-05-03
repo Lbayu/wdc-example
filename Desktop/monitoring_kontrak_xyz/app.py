@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 import joblib
 from datetime import datetime
-import matplotlib.pyplot as plt  # ⬅️ Tambahan untuk pie chart
+import matplotlib.pyplot as plt
+import plotly.express as px  # ⬅️ Tambahan untuk bar chart interaktif
 
 # Judul
 st.title("📊 Prediksi Risiko & Prioritas Kontrak XYZ")
@@ -79,6 +80,29 @@ if uploaded_file is not None:
         ax.axis('equal')
         st.pyplot(fig)
 
+    # ✅ Tambahan: Bar Chart Horizontal ala Tableau
+    st.subheader("📌 Visualisasi Durasi Kontrak per Vendor berdasarkan Risk Level")
+    fig_bar = px.bar(
+        df.sort_values('Durasi Kontrak (hari)', ascending=False),
+        x='Durasi Kontrak (hari)',
+        y='Nama Vendor',
+        color='Risk Level',
+        orientation='h',
+        height=800,
+        labels={
+            'Durasi Kontrak (hari)': 'Durasi Kontrak (hari)',
+            'Nama Vendor': 'Nama Vendor',
+            'Risk Level': 'Tingkat Risiko'
+        },
+        color_discrete_map={
+            'Rendah': '#1f77b4',
+            'Sedang': '#ff7f0e',
+            'Tinggi': '#d62728'
+        }
+    )
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+    # 📈 Line Chart Prediksi Sisa Hari
     st.subheader("📈 Prediksi Sisa Hari Kontrak per Vendor")
     line_data = df[['Nama Vendor', 'Predicted_Duration']].set_index('Nama Vendor')
     st.line_chart(line_data)
