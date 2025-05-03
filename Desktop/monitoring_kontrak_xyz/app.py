@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
 import joblib
-from datetime import datetime
 import matplotlib.pyplot as plt
-import plotly.express as px  # ✅ Tambahan interaktif
+from datetime import datetime
+import plotly.express as px
+from plotly.io import to_image
 
 # Judul
 st.title("📊 Prediksi Risiko & Prioritas Kontrak XYZ")
@@ -41,6 +42,7 @@ if uploaded_file is not None:
         features = ['Nilai Kontrak', 'Durasi Kontrak (hari)', 'Delay Perpanjangan (hari)']
         df['Prioritas_encoded'] = model.predict(df[features])
 
+        # Load LabelEncoder Prioritas
         le_priority = joblib.load("le_priority.pkl")
         df['Prioritas'] = le_priority.inverse_transform(df['Prioritas_encoded'])
 
@@ -67,35 +69,56 @@ if uploaded_file is not None:
                      'Delay Perpanjangan (hari)', 'Risk Level', 'Prioritas', 
                      'Predicted_Duration_Status']])
 
-    # 📊 Visualisasi Risk Level Interaktif
-    st.subheader("📊 Visualisasi Durasi Kontrak per Vendor berdasarkan Risk Level")
-    fig = px.bar(
-        df,
-        x="Durasi Kontrak (hari)",
-        y="Nama Vendor",
-        color="Risk Level",
-        orientation="h",
-        hover_data=["Jenis Pengadaan", "Nama Vendor", "Risk Level", "Durasi Kontrak (hari)"],
-        color_discrete_map={"Tinggi": "red", "Sedang": "orange", "Rendah": "blue"},
-        title="📌 Visualisasi Durasi Kontrak per Vendor berdasarkan Risk Level"
-    )
-    st.plotly_chart(fig, use_container_width=True)
+    # 📊 Visualisasi Data
+    st.subheader("📊 Jumlah Kontrak per Risk Level")
+    st.bar_chart(df['Risk Level'].value_counts())
 
-    # 🧁 Distribusi Prioritas Kontrak
     if 'Prioritas' in df.columns:
         st.subheader("🧁 Distribusi Prioritas Kontrak")
         priority_counts = df['Prioritas'].value_counts()
-        fig2, ax2 = plt.subplots()
-        ax2.pie(priority_counts, labels=priority_counts.index, autopct='%1.1f%%', startangle=90)
-        ax2.axis('equal')
-        st.pyplot(fig2)
+        fig1, ax1 = plt.subplots()
+        ax1.pie(priority_counts, labels=priority_counts.index, autopct='%1.1f%%', startangle=90)
+        ax1.axis('equal')
+        st.pyplot(fig1)
 
-    # 📈 Prediksi Sisa Hari Kontrak
-    st.subheader("📈 Prediksi Sisa Hari Kontrak per Vendor")
-    line_data = df[['Nama Vendor', 'Predicted_Duration']].set_index('Nama Vendor')
-    st.line_chart(line_data)
+    # 📈 Visualisasi Durasi Kontrak (rinci dan interaktif)
+    st.subheader("📈 Durasi Kontrak per Vendor (Horizontal Bar)")
+    sort_order = st.radio("Urutkan berdasarkan durasi kontrak:", ["Terpanjang ke Terpendek", "Terpendek ke Terpanjang"])
+    ascending = sort_order == "Terpendek ke Terpanjang"
 
-    # 📥 Unduh hasil
+    df_sorted = df.sort_values(by="Durasi Kontrak (hari)", ascending=ascending).copy()
+    df_sorted['Label Vendor'] = df_sorted['Nama Vendor'] + " | " + df_sorted['Nomor Kontrak'].astype(str) + " | " + df_sorted['Jenis Pengadaan']
+
+    fig2 = px.bar(
+        df_sorted,
+        x="Durasi Kontrak (hari)",
+        y="Label Vendor",
+        color="Risk Level",
+        orientation="h",
+        hover_data={
+            "Jenis Pengadaan": True,
+            "Nama Vendor": True,
+            "Nomor Kontrak": True,
+            "Risk Level": True,
+            "Durasi Kontrak (hari)": True,
+            "Label Vendor": False
+        },
+        color_discrete_map={"Tinggi": "red", "Sedang": "orange", "Rendah": "blue"},
+        title="📌 Visualisasi Durasi Kontrak per Vendor berdasarkan Risk Level"
+    )
+    fig2.update_layout(yaxis_title="Vendor | Nomor Kontrak | Jenis Pengadaan")
+    st.plotly_chart(fig2, use_container_width=True)
+
+    # 📥 Unduh Grafik sebagai PNG
+    img_bytes = to_image(fig2, format="png")
+    st.download_button(
+        label="📥 Unduh Grafik sebagai PNG",
+        data=img_bytes,
+        file_name="visualisasi_kontrak.png",
+        mime="image/png"
+    )
+
+    # 📥 Unduh hasil CSV
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button("📥 Unduh hasil sebagai CSV", data=csv, file_name="hasil_prediksi.csv", mime='text/csv')
 
