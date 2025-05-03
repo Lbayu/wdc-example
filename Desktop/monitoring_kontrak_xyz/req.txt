@@ -1,8 +1,7 @@
 streamlit
 pandas
-numpy
-matplotlib
-seaborn
 scikit-learn
-imbalanced-learn
 joblib
+matplotlib
+plotly
+kaleido
