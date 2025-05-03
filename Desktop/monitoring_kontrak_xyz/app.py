@@ -10,7 +10,7 @@ from plotly.io import to_image
 st.title("📊 Prediksi Risiko & Prioritas Kontrak XYZ")
 
 # Upload file CSV
-uploaded_file = st.file_uploader("📂 Upload data kontrak (CSV)", type=["csv"])
+uploaded_file = st.file_uploader("Upload data kontrak (CSV)", type=["csv"])
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
 
@@ -81,10 +81,10 @@ if uploaded_file is not None:
         ax1.axis('equal')
         st.pyplot(fig1)
 
-    # 📈 Visualisasi Durasi Kontrak
+    # 📈 Visualisasi Durasi Kontrak (rinci dan interaktif)
     st.subheader("📈 Durasi Kontrak per Vendor (Horizontal Bar)")
     sort_order = st.radio("Urutkan berdasarkan durasi kontrak:", ["Terpanjang ke Terpendek", "Terpendek ke Terpanjang"])
-    ascending = sort_order == "Terpendek ke Terpendek"
+    ascending = sort_order == "Terpendek ke Terpanjang"
 
     df_sorted = df.sort_values(by="Durasi Kontrak (hari)", ascending=ascending).copy()
     df_sorted['Label Vendor'] = df_sorted['Nama Vendor'] + " | " + df_sorted['Nomor Kontrak'].astype(str) + " | " + df_sorted['Jenis Pengadaan']
@@ -109,7 +109,16 @@ if uploaded_file is not None:
     fig2.update_layout(yaxis_title="Vendor | Nomor Kontrak | Jenis Pengadaan")
     st.plotly_chart(fig2, use_container_width=True)
 
-    # 📥 Unduh hasil sebagai CSV
+    # 📥 Unduh Grafik sebagai PNG
+    img_bytes = to_image(fig2, format="png")
+    st.download_button(
+        label="📥 Unduh Grafik sebagai PNG",
+        data=img_bytes,
+        file_name="visualisasi_kontrak.png",
+        mime="image/png"
+    )
+
+    # 📥 Unduh hasil CSV
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button("📥 Unduh hasil sebagai CSV", data=csv, file_name="hasil_prediksi.csv", mime='text/csv')
 
